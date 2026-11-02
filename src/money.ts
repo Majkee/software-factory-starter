@@ -28,9 +28,11 @@ export function toCents(amount: string): Cents {
 /** Formats cents as a decimal string with a currency code, e.g. "12.34 PLN". */
 export function formatCents(cents: Cents, currency = "PLN"): string {
   assertCents(cents);
-  const whole = Math.trunc(cents / 100);
-  const fraction = String(Math.abs(cents % 100)).padStart(2, "0");
-  return `${whole}.${fraction} ${currency}`;
+  const sign = cents < 0 ? "-" : "";
+  const abs = Math.abs(cents);
+  const whole = Math.trunc(abs / 100);
+  const fraction = String(abs % 100).padStart(2, "0");
+  return `${sign}${whole}.${fraction} ${currency}`;
 }
 
 /** Multiplies an amount by a rate (e.g. VAT 0.23) and rounds half away from zero. */
