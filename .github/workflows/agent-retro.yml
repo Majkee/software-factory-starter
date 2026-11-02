@@ -22,7 +22,7 @@ jobs:
       group: factory-retro
       cancel-in-progress: false
     steps:
-      - uses: actions/create-github-app-token@v2
+      - uses: actions/create-github-app-token@v3
         id: app
         with:
           app-id: ${{ vars.FACTORY_APP_ID }}
@@ -36,7 +36,7 @@ jobs:
           open=$(gh pr list --label factory:retro --state open --json number --jq length)
           echo "go=$([ "$open" -eq 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
       - if: steps.gate.outputs.go == 'true'
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           token: ${{ steps.app.outputs.token }}

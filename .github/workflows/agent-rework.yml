@@ -24,7 +24,7 @@ jobs:
       group: factory-pr-${{ github.event.pull_request.number }}
       cancel-in-progress: false
     steps:
-      - uses: actions/create-github-app-token@v2
+      - uses: actions/create-github-app-token@v3
         id: app
         with:
           app-id: ${{ vars.FACTORY_APP_ID }}
@@ -47,13 +47,13 @@ jobs:
             echo "go=true" >> "$GITHUB_OUTPUT"
           fi
       - if: steps.limit.outputs.go == 'true'
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
           token: ${{ steps.app.outputs.token }}
       - if: steps.limit.outputs.go == 'true'
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
