@@ -1,0 +1,54 @@
+# Continuous improvement of the factory itself. Weekly, the agent looks for repeated review findings
+# and human corrections, and proposes ONE PR to CODING_STANDARDS.md / skills / GLOSSARY.md.
+# Always human-reviewed; never chains into other tasks (hooks block edits to .github/ and .claude/settings).
+name: "factory: retro"
+
+on:
+  schedule:
+    - cron: "41 15 * * 5"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  retro:
+    if: vars.FACTORY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    concurrency:
+      group: factory-retro
+      cancel-in-progress: false
+    steps:
+      - uses: actions/create-github-app-token@v2
+        id: app
+        with:
+          app-id: ${{ vars.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+      - name: Skip while the last retro is still open
+        id: gate
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          open=$(gh pr list --label factory:retro --state open --json number --jq length)
+          echo "go=$([ "$open" -eq 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - if: steps.gate.outputs.go == 'true'
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app.outputs.token }}
+      - if: steps.gate.outputs.go == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ steps.app.outputs.token }}
+          allowed_bots: ${{ vars.FACTORY_BOT_LOGIN }}
+          prompt: "/retro"
+          claude_args: >-
+            --max-turns 40
+            --max-budget-usd 3
+            ${{ vars.FACTORY_MODEL && format('--model {0}', vars.FACTORY_MODEL) || '' }}
+            --allowedTools "Read,Edit,Write,Grep,Glob,Bash(date *),Bash(git *),Bash(gh pr list *),Bash(gh pr view *),Bash(gh issue list *),Bash(gh issue view *),Bash(gh pr create *)"

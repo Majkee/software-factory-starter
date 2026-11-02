@@ -1,0 +1,20 @@
+name: Bug
+description: Something gives a wrong result. Triage will reproduce it first.
+labels: [needs-triage]
+body:
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The exact input (invoice JSON, function call) you used.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+      placeholder: |
+        Expected: formatCents(-50) === "-0.50 PLN"
+        Actual:   "0.50 PLN"
+    validations:
+      required: true

@@ -1,0 +1,23 @@
+[
+  { "name": "needs-triage", "color": "fbca04", "description": "Factory: waiting for the triage task" },
+  { "name": "needs-info", "color": "d4c5f9", "description": "Factory: the reporter must answer questions" },
+  { "name": "ready-for-agent", "color": "0e8a16", "description": "Factory: well-specified, an agent may implement it" },
+  { "name": "agent:in-progress", "color": "1d76db", "description": "Factory: an agent run owns this issue" },
+  {
+    "name": "ready-for-human",
+    "color": "b60205",
+    "description": "Factory: needs a person (stuck, risky or judgement call)"
+  },
+  { "name": "wontfix", "color": "ffffff", "description": "Will not be worked on" },
+  { "name": "agent", "color": "5319e7", "description": "PR opened by the factory" },
+  { "name": "review:passed", "color": "0e8a16", "description": "Factory review passed; waiting for a human approval" },
+  {
+    "name": "needs-rework",
+    "color": "e99695",
+    "description": "Factory review or CI failed; the rework task will fix it"
+  },
+  { "name": "ci-failure", "color": "b60205", "description": "CI failed on main (opened by the CI doctor)" },
+  { "name": "factory:maintenance", "color": "c5def5", "description": "Small PR from the nightly maintenance task" },
+  { "name": "factory:retro", "color": "c5def5", "description": "Proposed change to the factory's own instructions" },
+  { "name": "factory:metrics", "color": "c5def5", "description": "Weekly factory metrics" }
+]

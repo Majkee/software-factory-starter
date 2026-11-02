@@ -1,0 +1,83 @@
+# Continuous improvement: one small, boring job per night.
+#   Mon: architecture scan → one issue with refactor candidates (no code changes)
+#   Thu: dependencies → audit-fix PR or an upgrade issue
+#   other days: lint ratchet → promote one pending rule, fix its violations, small PR
+# Throttled: skips while a factory:maintenance PR is still open.
+name: "factory: maintenance"
+
+on:
+  schedule:
+    - cron: "23 2 * * *"
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "Job to run"
+        type: choice
+        options: [auto, lint-ratchet, dependencies, architecture]
+        default: auto
+
+permissions: {}
+
+concurrency:
+  group: factory-maintenance
+  cancel-in-progress: false
+
+jobs:
+  maintain:
+    if: vars.FACTORY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/create-github-app-token@v2
+        id: app
+        with:
+          app-id: ${{ vars.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app.outputs.token }}
+      - name: Pick tonight's job (deterministic)
+        id: pick
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          REQUESTED: ${{ inputs.job || 'auto' }}
+        run: |
+          open=$(gh pr list --label factory:maintenance --state open --json number --jq length)
+          if [ "$open" -gt 0 ]; then echo "A maintenance PR is still open; skipping."; echo "job=" >> "$GITHUB_OUTPUT"; exit 0; fi
+          job="$REQUESTED"
+          if [ "$job" = "auto" ]; then
+            case "$(date -u +%u)" in
+              1) job=architecture ;;
+              4) job=dependencies ;;
+              *) job=lint-ratchet ;;
+            esac
+          fi
+          if [ "$job" = "lint-ratchet" ] && [ "$(jq '.pending | length' .factory/lint-ratchet.json)" -eq 0 ]; then
+            echo "Lint ratchet is complete; nothing to do."; job=""
+          fi
+          echo "Job: ${job:-none}" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "job=$job" >> "$GITHUB_OUTPUT"
+      - if: steps.pick.outputs.job != ''
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - if: steps.pick.outputs.job != ''
+        run: npm ci
+      - if: steps.pick.outputs.job != ''
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ steps.app.outputs.token }}
+          allowed_bots: ${{ vars.FACTORY_BOT_LOGIN }}
+          prompt: "/maintain ${{ steps.pick.outputs.job }}"
+          claude_args: >-
+            --max-turns 50
+            --max-budget-usd 4
+            ${{ vars.FACTORY_MODEL && format('--model {0}', vars.FACTORY_MODEL) || '' }}
+            --allowedTools "Read,Edit,Write,Grep,Glob,Bash(npm ci),Bash(npm run *),Bash(npm audit *),Bash(npm outdated *),Bash(npx vitest *),Bash(node *),Bash(git *),Bash(gh issue list *),Bash(gh issue create *),Bash(gh pr create *)"

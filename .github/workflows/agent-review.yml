@@ -1,0 +1,51 @@
+# Brake #2: automated review in a fresh context, two passes (standards + spec).
+# Trigger: an agent PR is opened or updated. Verdict → review:passed (human approves) or needs-rework.
+name: "factory: review"
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
+
+permissions: {}
+
+jobs:
+  review:
+    if: >-
+      vars.FACTORY_ENABLED == 'true' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(github.event.pull_request.labels.*.name, 'agent') &&
+      (github.event.action != 'labeled' || github.event.label.name == 'agent')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    concurrency:
+      group: factory-review-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/create-github-app-token@v2
+        id: app
+        with:
+          app-id: ${{ vars.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ steps.app.outputs.token }}
+          allowed_bots: ${{ vars.FACTORY_BOT_LOGIN }}
+          prompt: "/review ${{ github.event.pull_request.number }}"
+          claude_args: >-
+            --max-turns 30
+            --max-budget-usd 2
+            ${{ vars.FACTORY_MODEL && format('--model {0}', vars.FACTORY_MODEL) || '' }}
+            --allowedTools "Read,Grep,Glob,Bash(npx vitest *),Bash(gh pr view *),Bash(gh pr diff *),Bash(gh pr comment *),Bash(gh pr edit *),Bash(gh issue view *)"

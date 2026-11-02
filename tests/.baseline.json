@@ -1,0 +1,4 @@
+{
+  "$comment": "Test ratchet. CI fails if the number of test cases drops below minTests, so an agent cannot get to green by deleting tests. Raise it with `node scripts/check-test-ratchet.mjs --update` in a human-reviewed PR.",
+  "minTests": 18
+}

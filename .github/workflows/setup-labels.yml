@@ -1,0 +1,30 @@
+# One-time setup (safe to re-run): creates or updates the factory's labels from .github/labels.json.
+name: "factory: setup labels"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  labels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Create or update labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          jq -c '.[]' .github/labels.json | while read -r label; do
+            name=$(jq -r .name <<<"$label")
+            gh label create "$name" --force \
+              --color "$(jq -r .color <<<"$label")" \
+              --description "$(jq -r .description <<<"$label")"
+            echo "✔ $name"
+          done

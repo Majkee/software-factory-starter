@@ -1,0 +1,57 @@
+# Task: implement. Trigger: issue labeled agent:in-progress (set by dispatch).
+# Red-green TDD on a branch agent/<n>-*, then a DRAFT PR labeled "agent". Never merges.
+name: "factory: implement"
+
+on:
+  issues:
+    types: [labeled]
+
+permissions: {}
+
+jobs:
+  implement:
+    if: vars.FACTORY_ENABLED == 'true' && github.event.label.name == 'agent:in-progress'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+    concurrency:
+      group: factory-issue-${{ github.event.issue.number }}
+      cancel-in-progress: false
+    steps:
+      # The App token (not GITHUB_TOKEN) is what lets the PR this run opens trigger CI and review.
+      - uses: actions/create-github-app-token@v2
+        id: app
+        with:
+          app-id: ${{ vars.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app.outputs.token }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ steps.app.outputs.token }}
+          allowed_bots: ${{ vars.FACTORY_BOT_LOGIN }}
+          prompt: "/fix-issue ${{ github.event.issue.number }}"
+          claude_args: >-
+            --max-turns 60
+            --max-budget-usd 5
+            ${{ vars.FACTORY_MODEL && format('--model {0}', vars.FACTORY_MODEL) || '' }}
+            --allowedTools "Read,Edit,Write,Grep,Glob,Bash(npm ci),Bash(npm run *),Bash(npx vitest *),Bash(node *),Bash(git *),Bash(gh issue view *),Bash(gh issue comment *),Bash(gh issue edit *),Bash(gh pr create *)"
+      - name: Hand back to a human if the run itself failed or timed out
+        if: failure() || cancelled()
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          n=${{ github.event.issue.number }}
+          gh issue comment "$n" --body "<!-- factory:stuck --> The implement run ended without a PR ([logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})). Handing back to a human."
+          gh issue edit "$n" --remove-label agent:in-progress --add-label ready-for-human

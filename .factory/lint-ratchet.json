@@ -1,0 +1,10 @@
+{
+  "$comment": "Lint ratchet. 'rules' is where we want to end up. 'pending' rules are switched off for now. The nightly maintenance task fixes the violations of ONE pending rule and removes it from 'pending'. Never add to 'pending'.",
+  "rules": {
+    "@typescript-eslint/explicit-function-return-type": "error",
+    "@typescript-eslint/no-non-null-assertion": "error",
+    "complexity": ["error", 8],
+    "max-lines-per-function": ["error", { "max": 40, "skipComments": true }]
+  },
+  "pending": ["@typescript-eslint/explicit-function-return-type", "max-lines-per-function"]
+}

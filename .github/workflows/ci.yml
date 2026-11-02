@@ -1,0 +1,61 @@
+# Brake #1: the deterministic gate. Make the "check" job a REQUIRED status check on main
+# (Settings → Rules → Rulesets). Agents cannot skip it with --no-verify.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  merge_group:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Typecheck, lint, format, tests, test ratchet
+        run: npm run check
+      - name: Ratchets only get stricter
+        if: github.event_name == 'pull_request'
+        run: node scripts/check-ratchets.mjs "origin/${{ github.base_ref }}"
+
+  # Optional: acceptance scenarios kept in a private repo the agents cannot read.
+  # Set repository variable HOLDOUT_REPO=owner/repo and secret HOLDOUT_TOKEN (read-only, that repo only).
+  holdout:
+    if: vars.HOLDOUT_REPO != ''
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v5
+        with:
+          repository: ${{ vars.HOLDOUT_REPO }}
+          token: ${{ secrets.HOLDOUT_TOKEN }}
+          path: holdout
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Holdout scenarios (results only, no test source in the logs)
+        run: npm run test:holdout -- --reporter=dot

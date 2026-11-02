@@ -1,0 +1,7 @@
+node_modules/
+coverage/
+holdout/
+.env
+.env.*
+.claude/settings.local.json
+*.log

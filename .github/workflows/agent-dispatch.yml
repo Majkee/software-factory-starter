@@ -1,0 +1,50 @@
+# Task: dispatch (deterministic, no LLM). This is the throttle.
+# Moves the oldest ready-for-agent issues to agent:in-progress while work-in-progress is under
+# FACTORY_MAX_WIP. Because it labels with the GitHub App token, the label triggers agent-implement.
+name: "factory: dispatch"
+
+on:
+  issues:
+    types: [labeled]
+  pull_request:
+    types: [closed]
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: factory-dispatch
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    if: >-
+      vars.FACTORY_ENABLED == 'true' &&
+      (github.event_name != 'issues' || github.event.label.name == 'ready-for-agent') &&
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/create-github-app-token@v2
+        id: app
+        with:
+          app-id: ${{ vars.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+      - name: Dispatch within the WIP limit
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          MAX_WIP: ${{ vars.FACTORY_MAX_WIP || '2' }}
+        run: |
+          wip=$(gh issue list --label agent:in-progress --state open --json number --jq length)
+          prs=$(gh pr list --label agent --state open --json number --jq length)
+          free=$(( MAX_WIP - wip - prs ))
+          echo "In progress: $wip, open agent PRs: $prs, limit: $MAX_WIP, free slots: $free" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$free" -le 0 ]; then exit 0; fi
+          gh issue list --label ready-for-agent --state open --limit 50 --json number,createdAt \
+            --jq 'sort_by(.createdAt) | .[].number' | head -n "$free" | while read -r n; do
+            gh issue edit "$n" --remove-label ready-for-agent --add-label agent:in-progress
+            echo "Dispatched #$n" | tee -a "$GITHUB_STEP_SUMMARY"
+          done

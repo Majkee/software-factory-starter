@@ -1,0 +1,42 @@
+# Measure, then open the throttle. Weekly report (no LLM) posted to the job summary and to the
+# "Factory metrics" issue. Raise FACTORY_MAX_WIP only when these numbers hold.
+name: "factory: metrics"
+
+on:
+  schedule:
+    - cron: "7 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+  actions: read
+
+jobs:
+  metrics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Compute metrics
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: node scripts/factory-metrics.mjs --days 28 | tee report.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Post to the metrics issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          issue=$(gh issue list --label factory:metrics --state open --json number --jq '.[0].number // empty')
+          if [ -z "$issue" ]; then
+            gh issue create --title "Factory metrics" --label factory:metrics --body-file report.md
+          else
+            gh issue comment "$issue" --body-file report.md
+          fi

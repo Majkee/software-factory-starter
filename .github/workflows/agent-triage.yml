@@ -1,0 +1,53 @@
+# Task: triage. Trigger: issue labeled needs-triage (issue forms add it automatically).
+# Reads the issue and the code, reproduces bugs, and hands off with exactly one label.
+# Read-mostly: it can comment and label, but it cannot push code.
+name: "factory: triage"
+
+on:
+  issues:
+    types: [labeled]
+
+permissions: {}
+
+jobs:
+  triage:
+    if: vars.FACTORY_ENABLED == 'true' && github.event.label.name == 'needs-triage'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+    concurrency:
+      group: factory-issue-${{ github.event.issue.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/create-github-app-token@v2
+        id: app
+        with:
+          app-id: ${{ vars.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Claim the issue (remove the trigger label so a re-run never doubles up)
+        run: gh issue edit "${{ github.event.issue.number }}" --remove-label needs-triage
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ steps.app.outputs.token }}
+          allowed_bots: ${{ vars.FACTORY_BOT_LOGIN }}
+          prompt: "/triage ${{ github.event.issue.number }}"
+          claude_args: >-
+            --max-turns 25
+            --max-budget-usd 2
+            ${{ vars.FACTORY_MODEL && format('--model {0}', vars.FACTORY_MODEL) || '' }}
+            --allowedTools "Read,Grep,Glob,Bash(npx vitest *),Bash(node *),Bash(gh issue view *),Bash(gh issue list *),Bash(gh issue comment *),Bash(gh issue edit *)"

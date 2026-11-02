@@ -1,0 +1,25 @@
+name: Feature or change
+description: Ask for a change. Triage decides whether an agent can build it.
+labels: [needs-triage]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should be possible afterwards, and for whom? Use words from GLOSSARY.md.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Concrete examples, ideally input → expected output. Each becomes a test.
+      placeholder: |
+        - computeInvoice([...], "save10") gives the same totals as "SAVE10"
+    validations:
+      required: true
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: What this change must NOT do.
