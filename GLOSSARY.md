@@ -2,18 +2,20 @@
 
 Domain words used in code, tests, issues and PRs. Add a term the moment a discussion settles it.
 
-| Term              | Meaning                                                                                                             |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------- |
-| **Cents**         | An integer amount of the smallest currency unit. `1234` cents = 12.34 PLN. The only money type.                     |
-| **Line**          | One product on an invoice: SKU, quantity, unit price (cents) and VAT rate.                                          |
-| **Line value**    | `unitPrice × quantity` for one line, before discount.                                                               |
-| **Subtotal**      | Sum of all line values.                                                                                             |
-| **Discount**      | Cents taken off the subtotal by a discount code. Never more than the subtotal.                                      |
-| **Discount code** | Text a customer enters (e.g. `SAVE10`). Maps to a percent or fixed discount.                                        |
-| **Allocation**    | Spreading the discount over lines in proportion to line value; the rounding remainder goes to the last line.        |
-| **Net**           | Subtotal minus discount.                                                                                            |
-| **Line VAT**      | VAT computed and rounded (half away from zero) for each line on its net share. Invoice VAT is the sum of line VATs. |
-| **Total**         | Net plus VAT.                                                                                                       |
+| Term                 | Meaning                                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **Cents**            | An integer amount of the smallest currency unit. `1234` cents = 12.34 PLN. The only money type.                     |
+| **Line**             | One product on an invoice: SKU, quantity, unit price (cents) and VAT rate.                                          |
+| **Line value**       | `unitPrice × quantity` for one line, before discount.                                                               |
+| **Subtotal**         | Sum of all line values.                                                                                             |
+| **Discount**         | Cents taken off the subtotal by a discount code. Never more than the subtotal.                                      |
+| **Discount code**    | Text a customer enters (e.g. `SAVE10`). Maps to a percent or fixed discount.                                        |
+| **Allocation**       | Spreading the discount over lines in proportion to line value; the rounding remainder goes to the last line.        |
+| **Net**              | Subtotal minus discount.                                                                                            |
+| **Line VAT**         | VAT computed and rounded (half away from zero) for each line on its net share. Invoice VAT is the sum of line VATs. |
+| **Total**            | Net plus VAT.                                                                                                       |
+| **Original invoice** | The invoice a correction refers to. Computed exactly like today.                                                    |
+| **Correction**       | A document that changes an original invoice. Its amounts are "after minus before" and may be negative.              |
 
 ## Factory words
 
