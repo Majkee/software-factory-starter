@@ -14,7 +14,7 @@ const rules = [
   [/\b(rm|git\s+rm)\b[^\n]*\btests?\//, "Deleting test files is not allowed. Fix the code, not the tests."],
   [/\b(curl|wget|nc|ncat)\b/, "Network tools are blocked in this repo. Use gh for GitHub data."],
   [
-    /\b(printenv|env)\b\s*($|\|)|\$\{?(ANTHROPIC|GITHUB|GH)_[A-Z_]*TOKEN|ANTHROPIC_API_KEY/,
+    /\b(printenv|env)\b\s*($|\|)|\$\{?(ANTHROPIC|CLAUDE|GITHUB|GH)_[A-Z_]*TOKEN|ANTHROPIC_API_KEY|CLAUDE_CODE_OAUTH_TOKEN/,
     "Reading secrets or the environment is not allowed.",
   ],
   [

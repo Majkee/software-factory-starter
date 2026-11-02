@@ -85,8 +85,10 @@ człowieka. Kończy się, zmienia etykietę, a ta zmiana uruchamia kolejny przeb
    Issues (RW), Pull requests (RW), Actions (R), Checks (R). Zainstaluj ją na repo.
    - zmienna repo `FACTORY_APP_ID`, sekret `FACTORY_APP_PRIVATE_KEY`,
    - zmienna `FACTORY_BOT_LOGIN`, np. `moja-fabryka[bot]` (agent może być uruchamiany przez tego bota).
-5. **Klucz modelu:** sekret `ANTHROPIC_API_KEY`. Najlepiej klucz organizacji z limitem wydatków
-   w Console, nie prywatny token.
+5. **Dostęp do modelu:** sekret `CLAUDE_CODE_OAUTH_TOKEN` z subskrypcji Claude Pro/Max
+   (`claude setup-token`). Limity użycia są wspólne z Twoją pracą w Claude Code, a token
+   wygasa po około roku. Wolisz klucz API z limitem wydatków? W workflowach `agent-*.yml` zamień
+   `claude_code_oauth_token` na `anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}`.
 6. **Włącz fabrykę:** zmienna `FACTORY_ENABLED=true`. To jest też **wyłącznik awaryjny**: ustaw
    cokolwiek innego, a żaden agent się nie uruchomi.
 7. **Przypnij akcje do SHA** (zalecane): `pinact run` albo ręcznie; Dependabot (`.github/dependabot.yml`)
