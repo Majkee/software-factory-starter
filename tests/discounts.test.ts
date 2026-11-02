@@ -9,6 +9,17 @@ describe("lookupDiscount", () => {
   it("rejects an unknown code", () => {
     expect(() => lookupDiscount("FREE")).toThrow(DiscountError);
   });
+
+  it("finds each of the other known codes", () => {
+    expect(lookupDiscount("SAVE25")).toEqual({ kind: "percent", percent: 25 });
+    expect(lookupDiscount("MINUS20")).toEqual({ kind: "fixed", amount: 2000 });
+  });
+
+  it("rejects the name of an inherited object property as a code", () => {
+    expect(() => lookupDiscount("constructor")).toThrow(DiscountError);
+    expect(() => lookupDiscount("toString")).toThrow(DiscountError);
+    expect(() => lookupDiscount("__proto__")).toThrow(DiscountError);
+  });
 });
 
 describe("discountAmount", () => {

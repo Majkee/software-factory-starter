@@ -18,11 +18,11 @@ export const DISCOUNT_CODES: Readonly<Record<string, Discount>> = {
 };
 
 export function lookupDiscount(code: string): Discount {
-  const discount = DISCOUNT_CODES[code];
-  if (discount === undefined) {
+  // Own properties only: "constructor", "toString" and "__proto__" are inherited from Object.prototype.
+  if (!Object.hasOwn(DISCOUNT_CODES, code)) {
     throw new DiscountError(`Unknown discount code: "${code}"`);
   }
-  return discount;
+  return DISCOUNT_CODES[code] as Discount;
 }
 
 /** Returns how many cents a discount takes off a subtotal. Never more than the subtotal. */
