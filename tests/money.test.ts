@@ -32,6 +32,25 @@ describe("formatCents", () => {
   });
 });
 
+describe("formatCents negative amounts", () => {
+  it.each([
+    [-50, "-0.50 PLN"],
+    [-5, "-0.05 PLN"],
+    [-99, "-0.99 PLN"],
+    [-100, "-1.00 PLN"],
+    [-150, "-1.50 PLN"],
+    [0, "0.00 PLN"],
+    [50, "0.50 PLN"],
+    [123456, "1234.56 PLN"],
+  ])("formats %i as %s", (cents, expected) => {
+    expect(formatCents(cents)).toBe(expected);
+  });
+
+  it("keeps the minus sign with another currency", () => {
+    expect(formatCents(-50, "EUR")).toBe("-0.50 EUR");
+  });
+});
+
 describe("applyRate", () => {
   it("rounds half away from zero", () => {
     expect(applyRate(250, 0.23)).toBe(58); // 57.5 -> 58
