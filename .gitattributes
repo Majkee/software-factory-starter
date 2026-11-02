@@ -1,0 +1,3 @@
+# LF everywhere, whatever core.autocrlf says. Prettier checks for LF, so CRLF checkouts on
+# Windows would fail `npm run check` after every branch switch.
+* text=auto eol=lf
