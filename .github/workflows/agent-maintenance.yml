@@ -72,7 +72,7 @@ jobs:
       - if: steps.pick.outputs.job != ''
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ steps.app.outputs.token }}
           allowed_bots: ${{ vars.FACTORY_BOT_LOGIN }}
           prompt: "/maintain ${{ steps.pick.outputs.job }}"

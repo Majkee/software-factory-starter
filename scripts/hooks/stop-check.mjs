@@ -12,7 +12,10 @@ if (input.stop_hook_active === true) process.exit(0);
 const changed = spawnSync("git", ["status", "--porcelain"], { encoding: "utf8" }).stdout.trim();
 if (changed === "") process.exit(0); // nothing was edited, nothing to check
 
-const result = spawnSync("npm", ["run", "check", "--silent"], { encoding: "utf8" });
+const result = spawnSync("npm", ["run", "check", "--silent"], {
+  encoding: "utf8",
+  shell: process.platform === "win32",
+});
 if (result.status === 0) process.exit(0);
 
 const output = `${result.stdout}\n${result.stderr}`.trim().split("\n").slice(-60).join("\n");
